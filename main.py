@@ -17,7 +17,7 @@ from ulauncher.api.shared.action.HideWindowAction import HideWindowAction
 from ulauncher.api.shared.action.ActionList import ActionList
 from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 
-from src.functions import get_snippets, copy_to_clipboard_xsel, copy_to_clipboard_wl
+from src.functions import Snippet, get_snippets, copy_to_clipboard_xsel, copy_to_clipboard_wl
 from src.items import no_input_item, show_suggestion_items, show_var_input
 from src.html_to_text import html_to_text
 
@@ -48,7 +48,19 @@ class ItemEnterEventLister(EventListener):
         type = data.get("type")
 
         if type == "select":
-            extension.snippet = data.get("snippet")
+            snippet_data = data.get("snippet")
+            extension.snippet = Snippet(
+                path=snippet_data["path"],
+                content=snippet_data["content"],
+                name=snippet_data["name"]
+            )
+            extension.snippet.icon = snippet_data["icon"]
+            extension.snippet.description = snippet_data["description"]
+            extension.snippet.is_markdown = snippet_data["is_markdown"]
+            extension.snippet.file_path_template = snippet_data["file_path_template"]
+            extension.snippet.file_overwrite = snippet_data["file_overwrite"]
+            extension.snippet.markdown_extensions = snippet_data["markdown_extensions"]
+            extension.snippet.variables = snippet_data["variables"]
             extension.state = "var"
         elif type == "cancel":
             extension.reset()

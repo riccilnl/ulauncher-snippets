@@ -45,19 +45,29 @@ def show_var_input(snippet, variable, value):
 
 
 def show_suggestion_items(suggestions: List[Snippet], limit = 8):
-
     if len(suggestions) == 0:
         return no_input_item()
 
-    return [
-        ExtensionResultItem(
+    items = []
+    for suggestion in suggestions[:limit]:
+        items.append(ExtensionResultItem(
             icon=suggestion.icon,
             name=suggestion.name,
             description=suggestion.description,
             on_enter=ExtensionCustomAction({
                 "type": "select",
-                "snippet": suggestion
+                "snippet": {
+                    "path": suggestion.path,
+                    "content": suggestion.content,
+                    "name": suggestion.name,
+                    "icon": suggestion.icon,
+                    "description": suggestion.description,
+                    "is_markdown": suggestion.is_markdown,
+                    "file_path_template": suggestion.file_path_template,
+                    "file_overwrite": suggestion.file_overwrite,
+                    "markdown_extensions": suggestion.markdown_extensions,
+                    "variables": suggestion.variables
+                }
             }, keep_app_open=True),
-        )
-        for suggestion in suggestions[:limit]
-    ]
+        ))
+    return items

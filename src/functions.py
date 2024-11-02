@@ -46,48 +46,56 @@ class Snippet:
     >>> s = Snippet('test-snippets/markdown.j2', 'test-snippets')
     >>> s.render()
     ('text/html', '<p>A snippet with <a href="https://daringfireball.net/projects/markdown/">Markdown</a> in it.</p>')
-
+    
     >>> s = Snippet('test-snippets/copy-to-path.j2', 'test-snippets')
     >>> s.variables["name"]["value"] = "test"
     >>> s.render_to_file_path()
     '~/test.ulauncher-snippets.test.md'
-
+    
     >>> s = Snippet('test-snippets/markdown-extensions.j2', 'test-snippets')
     >>> s.render()
     ('text/html', '<p>A snippet with <a class="wikilink" href="/Markdown/">Markdown</a> in it.</p>')
-
+    
     >>> s = Snippet('test-snippets/react/component.j2', 'test-snippets')
     >>> s.variables["name"]["value"] = "My Component"
     >>> s.render()
     ('text/plain', 'import React from "react"\\n\\nconst MyComponent = () => ();\\n\\nexport default MyComponent')
-
+    
     >>> s = Snippet('test-snippets/frontmatter.j2', 'test-snippets')
     >>> s.next_variable()
     {'label': 'Name of the component'}
-
+    
     >>> s.variables["name"]["value"] = "Set"
     >>> s.next_variable()
     {'label': 'With default', 'default': 'Hi'}
-
+    
     >>> s.get_variable("name")
     'Set'
-
+    
     >>> s.get_variable("other_var")
     'Hi'
-
+    
     >>> s = Snippet('test-snippets/globals.j2', 'test-snippets')
     >>> s.render()
     ('text/plain', '€\\nMike Barkmin')
-
+    
     >>> s = Snippet('test-snippets/filters.j2', 'test-snippets')
     >>> s.render()
     ('text/plain', '*****')
     """
 
-    def __init__(self, path: str, root_path: str = ""):
-        snippet = frontmatter.load(path)
-        icon = snippet.get("icon")
+    def __init__(self, path: str, root_path: str = "", content: str = None, name: str = None):
+        if content:
+            # Handle individual snippet from a multi-snippet file
+            snippet = frontmatter.loads(content)
+            self.name = name or snippet.get("name", "Unnamed Snippet")
+        else:
+            # Handle single snippet file
+            snippet = frontmatter.load(path)
+            file_name = str(Path(path).relative_to(root_path))
+            self.name = snippet.get("name", file_name[:-3])
 
+        icon = snippet.get("icon")
         if icon:
             self.icon = os.path.join(root_path, icon)
         else:
@@ -100,8 +108,6 @@ class Snippet:
         self.globals_path = os.path.join(root_path, "globals.py")
         self.filters_path = os.path.join(root_path, "filters.py")
         self.variables = snippet.get("vars", {})
-        file_name = str(Path(path).relative_to(root_path))
-        self.name = snippet.get("name", file_name[:-3])
         self.path = path
         self.description = snippet.get("description", snippet.content[:40])
         self.is_markdown = snippet.get("markdown", False)
@@ -110,12 +116,13 @@ class Snippet:
         self.markdown_extensions = snippet.get(
             "markdown_extensions", ["extra", "sane_lists"]
         )
+        self.content = snippet.content
 
     def render_to_file_path(self, args=[], copy_mode="gtk"):
         file_path = self._render(self.file_path_template, args, copy_mode)
         file_path = os.path.expanduser(file_path)
         (mime_type, content) = self.render(args, copy_mode)
-        if not os.path.exists(file_path):
+        if not os.path.exists(file_path) or self.file_overwrite:
             with open(file_path, "w+") as f:
                 f.write(content)
         else:
@@ -155,9 +162,7 @@ class Snippet:
         return rendered_snippet
 
     def render(self, args=[], copy_mode="gtk") -> (MimeType, str):
-        snippet = frontmatter.load(self.path)
-
-        rendered_snippet = self._render(snippet.content, args, copy_mode)
+        rendered_snippet = self._render(self.content, args, copy_mode)
 
         if self.is_markdown:
             try:
@@ -184,6 +189,8 @@ class Snippet:
 
     def get_variable(self, name):
         var = self.variables.get(name)
+        if var is None:
+            return ""
         default = var.get("default", "")
         value = var.get("value", default)
         return value
@@ -341,9 +348,24 @@ def get_snippets(path: str, search: str) -> List[Snippet]:
     snippets = []
     for f in suggestions:
         try:
-            s = Snippet(path=f, root_path=path)
-            snippets.append(s)
-        except:
+            # Check if file contains multiple snippets
+            with open(f) as file:
+                content = file.read()
+                if "===" in content:
+                    # Split into individual snippets
+                    parts = [p.strip() for p in content.split("===")]
+                    for part in parts:
+                        if part:  # Skip empty parts
+                            try:
+                                s = Snippet(path=f, root_path=path, content=part)
+                                snippets.append(s)
+                            except Exception as e:
+                                logger.error(f"Failed to parse snippet in {f}: {e}")
+                else:
+                    s = Snippet(path=f, root_path=path)
+                    snippets.append(s)
+        except Exception as e:
+            logger.error(f"Failed to process file {f}: {e}")
             continue
     return snippets
 
