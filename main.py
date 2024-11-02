@@ -17,10 +17,9 @@ from ulauncher.api.shared.action.HideWindowAction import HideWindowAction
 from ulauncher.api.shared.action.ActionList import ActionList
 from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 
-from src.functions import get_snippets, copy_to_clipboard_xsel, copy_to_clipboard_wl
+from src.functions import Snippet, get_snippets, copy_to_clipboard_xsel, copy_to_clipboard_wl
 from src.items import no_input_item, show_suggestion_items, show_var_input
 from src.html_to_text import html_to_text
-from src.snippet import Snippet
 
 
 logger = logging.getLogger(__name__)
