@@ -24,8 +24,8 @@
     {
       "id": "number_of_results",
       "type": "input",
-      "name": "Number of results",
-      "default_value": 8
+      "name": "Number of results (max 5)",
+      "default_value": 5
     },
     {
       "id": "snippets_copy_mode",

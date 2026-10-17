@@ -3,6 +3,8 @@ from ulauncher.api.shared.action.CopyToClipboardAction import CopyToClipboardAct
 from ulauncher.api.shared.action.ExtensionCustomAction import ExtensionCustomAction
 from ulauncher.api.shared.action.HideWindowAction import HideWindowAction
 from ulauncher.api.shared.action.DoNothingAction import DoNothingAction
+from ulauncher.api.shared.action.SetUserQueryAction import SetUserQueryAction
+from src.navigation import PHRASES_PREFIX, TEMPLATES_PREFIX
 from typing import List
 import logging
 
@@ -60,4 +62,22 @@ def show_suggestion_items(suggestions: List[Snippet], limit = 8):
             }, keep_app_open=True),
         )
         for suggestion in suggestions[:limit]
+    ]
+
+
+def show_category_items(keyword):
+    """At an empty query, offer two choices rather than every saved phrase."""
+    return [
+        ExtensionResultItem(
+            icon=ICON_FILE,
+            name="常用短语",
+            description="展开 phrases.json；输入关键词可直接搜索",
+            on_enter=SetUserQueryAction(keyword + " " + PHRASES_PREFIX),
+        ),
+        ExtensionResultItem(
+            icon=ICON_FILE,
+            name="变量模板",
+            description="展开 .j2 模板；支持填写变量",
+            on_enter=SetUserQueryAction(keyword + " " + TEMPLATES_PREFIX),
+        ),
     ]

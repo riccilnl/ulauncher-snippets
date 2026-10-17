@@ -33,6 +33,9 @@ https://github.com/mikebarkmin/ulauncher-snippets
 
 ## Usage
 
+Compact category navigation and JSON phrase files are documented in [PHRASES.md](PHRASES.md).
+
+
 For your snippets to be loaded place j2-files in your snippets directory. You can configure the directory in the extension settings. Type `snip` in Ulauncher and select the snippet you want to use.
 
 ## Snippets

@@ -19,8 +19,9 @@ from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 
 from src.functions import get_snippets, copy_to_clipboard_xsel, copy_to_clipboard_wl
 from src.phrases import get_phrases
+from src.navigation import parse_query, select_results
 from ulauncher.utils.fuzzy_search import get_score
-from src.items import no_input_item, show_suggestion_items, show_var_input
+from src.items import no_input_item, show_suggestion_items, show_var_input, show_category_items
 from src.html_to_text import html_to_text
 
 
@@ -124,16 +125,23 @@ class KeywordQueryEventListener(EventListener):
         path = extension.preferences["snippets_path"]
 
         if extension.state == "select":
-            suggestions = get_snippets(path, search) + get_phrases(path)
-            if search:
-                suggestions.sort(key=lambda item: get_score(search, item.name),
-                                 reverse=True)
-            return RenderResultListAction(
-                show_suggestion_items(
-                    suggestions,
-                    int(extension.preferences.get("number_of_results", 8))
-                    ),
-            )
+            mode, term = parse_query(search)
+            if mode == "home":
+                keyword = extension.preferences["snippets_keyword"]
+                return RenderResultListAction(show_category_items(keyword))
+
+            if mode == "phrases":
+                suggestions = get_phrases(path)
+            elif mode == "templates":
+                suggestions = get_snippets(path, term)
+            else:
+                suggestions = get_snippets(path, term) + get_phrases(path)
+
+            results = select_results(
+                suggestions, term, get_score,
+                extension.preferences.get("number_of_results", 5))
+            return RenderResultListAction(show_suggestion_items(results, len(results)))
+
         elif extension.state == "var":
             return RenderResultListAction(
                 show_var_input(extension.snippet, extension.variable, search)
